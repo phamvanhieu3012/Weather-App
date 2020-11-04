@@ -4,15 +4,15 @@ import "./App.css";
 import "weather-icons/css/weather-icons.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Weather from "./components/weather";
-import Form from "./components/form";
 import { render } from "@testing-library/react";
+import "./components/form.css";
 
 //api call api.openweathermap.org/data/2.5/weather?q=London,uk&appid={API key}
 const API_KEY = "2a12320e9c02e52b30338f259009f53d";
 
 class App extends React.Component {
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
     this.state = {
       city: undefined,
       country: undefined,
@@ -24,7 +24,6 @@ class App extends React.Component {
       description: "",
       error: false,
     };
-    this.getWeather();
 
     this.weatherIcon = {
       Thunderstorm: "wi-thunderstorm",
@@ -35,6 +34,8 @@ class App extends React.Component {
       Clear: "wi-day-sunny",
       Clouds: "wi-day-fog",
     };
+
+    this.getWeather = this.getWeather.bind(this);
   }
 
   calCelsius(temp) {
@@ -87,28 +88,68 @@ class App extends React.Component {
     }
   }
 
-  getWeather = async () => {
-    const api_call = await fetch(
-      `http://api.openweathermap.org/data/2.5/weather?q=London,uk&appid=${API_KEY}`
-    );
-    const response = await api_call.json();
-    console.log(response);
+  getWeather = async (e) => {
+    e.preventDefault();
+    console.log(e);
 
-    this.setState({
-      city: response.name,
-      country: response.sys.country,
-      celsius: this.calCelsius(response.main.temp),
-      temp_max: this.calCelsius(response.main.temp_max),
-      temp_min: this.calCelsius(response.main.temp_min),
-      description: response.weather[0].description,
-    });
-    this.get_WeatherIcon(this.weatherIcon, response.weather[0].id);
+    const city = e.target.elements.city.value;
+    const country = e.target.elements.country.value;
+
+    if (city && country) {
+      const api_call = await fetch(
+        `http://api.openweathermap.org/data/2.5/weather?q=${city},${country},uk&appid=${API_KEY}`
+      );
+      const response = await api_call.json();
+
+      this.setState({
+        city: `${response.name},${response.sys.country}`,
+        celsius: this.calCelsius(response.main.temp),
+        temp_max: this.calCelsius(response.main.temp_max),
+        temp_min: this.calCelsius(response.main.temp_min),
+        description: response.weather[0].description,
+      });
+      this.get_WeatherIcon(this.weatherIcon, response.weather[0].id);
+      this.setState({
+        error: false,
+      });
+    } else {
+      this.setState({
+        error: true,
+      });
+    }
   };
 
   render() {
     return (
       <div className="App">
-        <Form />
+        <div>{this.state.error ? error() : null}</div>
+        <div className="container">
+          <form onSubmit={this.getWeather}>
+            <div className="row">
+              <div className="col-md-3 offset-md-2">
+                <input
+                  type="text"
+                  className="form-control"
+                  name="city"
+                  autoComplete="off"
+                  placeholder="City"
+                />
+              </div>
+              <div className="col-md-3">
+                <input
+                  type="text"
+                  className="form-control"
+                  name="country"
+                  autoComplete="off"
+                  placeholder="Country"
+                />
+              </div>
+              <div className="col-md-3 mt-md-0 text-top-left">
+                <button className="btn btn-warning">Get Weather</button>
+              </div>
+            </div>
+          </form>
+        </div>
         <Weather
           city={this.state.city}
           country={this.state.country}
@@ -121,6 +162,14 @@ class App extends React.Component {
       </div>
     );
   }
+}
+
+function error() {
+  return (
+    <div className="alert alert-danger mb-5" role="alert">
+      Please Enter City and Country
+    </div>
+  );
 }
 
 export default App;
